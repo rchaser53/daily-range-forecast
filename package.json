@@ -1,21 +1,22 @@
 {
   "name": "daily-range-forecast",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "Japanese stock daily chart with automatic support and resistance detection",
+  "main": "server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "test": "node --test"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/rchaser53/daily-range-forecast.git"
   },
-  "keywords": [],
-  "author": "",
   "license": "ISC",
   "type": "commonjs",
-  "bugs": {
-    "url": "https://github.com/rchaser53/daily-range-forecast/issues"
-  },
-  "homepage": "https://github.com/rchaser53/daily-range-forecast#readme"
+  "dependencies": {
+    "dotenv": "^17.2.2",
+    "express": "^5.1.0",
+    "lightweight-charts": "^5.0.8"
+  }
 }
