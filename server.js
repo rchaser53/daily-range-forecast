@@ -3,7 +3,7 @@ require("dotenv").config();
 const express = require("express");
 const path = require("path");
 const { extractStockCode, getDailyBars } = require("./lib/jquants");
-const { detectLevels, calculateSMA } = require("./lib/analysis");
+const { detectLevels, calculateSMA, aggregateBars } = require("./lib/analysis");
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -15,12 +15,20 @@ app.get("/api/chart", async (req, res) => {
   try {
     if (!req.query.url) return res.status(400).json({ error: "url parameter is required" });
 
+    const timeframe = req.query.timeframe || "daily";
+    if (!["daily", "weekly", "monthly"].includes(timeframe)) {
+      return res.status(400).json({ error: "timeframe must be daily, weekly, or monthly" });
+    }
+
     const code = extractStockCode(req.query.url);
-    const bars = await getDailyBars(code);
-    if (!bars.length) return res.status(404).json({ error: "株価データがありません" });
+    const dailyBars = await getDailyBars(code);
+    if (!dailyBars.length) return res.status(404).json({ error: "株価データがありません" });
+
+    const bars = aggregateBars(dailyBars, timeframe);
 
     res.json({
       code,
+      timeframe,
       bars,
       sma: {
         sma5: calculateSMA(bars, 5),

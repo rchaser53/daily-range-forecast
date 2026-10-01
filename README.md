@@ -6,9 +6,12 @@
 
 - 株探URLから証券コードを抽出
 - J-Quants APIから日足OHLCVを取得
+- 日次 / 週次 / 月次チャートの切り替え
 - ローソク足と出来高を表示
 - SMA 5 / 25 / 75
 - Pivot High / Lowを利用した支持線・抵抗線の自動検出
+
+週次・月次は取得した日足OHLCVをサーバー側で集約して生成します。週足は月曜日始まり、月足は暦月単位です。
 
 ## Requirements
 
@@ -43,6 +46,14 @@ npm start
 https://kabutan.jp/stock/kabuka?code=4689&ashi=day
 ```
 
+時間足のセレクトボックスから日次・週次・月次を切り替えられます。
+
+APIを直接利用する場合は `timeframe` に `daily` / `weekly` / `monthly` を指定できます。
+
+```text
+/api/chart?url=https%3A%2F%2Fkabutan.jp%2Fstock%2Fkabuka%3Fcode%3D4689&timeframe=weekly
+```
+
 ## Test
 
 ```bash
@@ -51,7 +62,7 @@ npm test
 
 ## Support / resistance
 
-日足からPivot High / Lowを抽出し、価格差が既定で1.5%以内のPivotを同一ゾーンとしてまとめます。2回以上接触したゾーンを支持線または抵抗線として表示します。
+選択した時間足からPivot High / Lowを抽出し、価格差が既定で1.5%以内のPivotを同一ゾーンとしてまとめます。2回以上接触したゾーンを支持線または抵抗線として表示します。
 
 
 ## Cache

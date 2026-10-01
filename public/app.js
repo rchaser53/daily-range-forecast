@@ -2,17 +2,26 @@ const { createChart, CandlestickSeries, HistogramSeries, LineSeries, LineStyle }
 let chart;
 
 document.getElementById("load").addEventListener("click", loadChart);
+document.getElementById("timeframe").addEventListener("change", loadChart);
+
+const timeframeLabels = {
+  daily: "日次",
+  weekly: "週次",
+  monthly: "月次"
+};
 
 async function loadChart() {
   const status = document.getElementById("status");
   const sourceUrl = document.getElementById("url").value;
+  const timeframe = document.getElementById("timeframe").value;
   status.textContent = "読み込み中...";
 
   try {
-    const response = await fetch(`/api/chart?url=${encodeURIComponent(sourceUrl)}`);
+    const params = new URLSearchParams({ url: sourceUrl, timeframe });
+    const response = await fetch(`/api/chart?${params}`);
     const data = await response.json();
     if (!response.ok) throw new Error(data.error || "データ取得に失敗しました");
-    status.textContent = `銘柄コード: ${data.code} / ${data.bars.length}日`;
+    status.textContent = `銘柄コード: ${data.code} / ${timeframeLabels[data.timeframe]} / ${data.bars.length}本`;
     renderChart(data);
   } catch (error) {
     status.textContent = `エラー: ${error.message}`;
