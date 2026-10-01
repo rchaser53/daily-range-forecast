@@ -1,6 +1,6 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { detectPivots, calculateSMA } = require("../lib/analysis");
+const { detectPivots, calculateSMA, aggregateBars } = require("../lib/analysis");
 const { extractStockCode } = require("../lib/jquants");
 
 test("extractStockCode extracts code from Kabutan URL", () => {
@@ -27,4 +27,31 @@ test("detectPivots finds a local high and low", () => {
   const result = detectPivots(bars, 1, 1);
   assert.equal(result.highs[0].price, 5);
   assert.equal(result.lows[0].price, 0);
+});
+
+test("aggregateBars creates weekly OHLCV bars", () => {
+  const bars = [
+    { date:"2026-01-05", open:100, high:110, low:95, close:105, volume:10 },
+    { date:"2026-01-06", open:106, high:112, low:101, close:108, volume:20 },
+    { date:"2026-01-09", open:108, high:115, low:107, close:114, volume:30 },
+    { date:"2026-01-12", open:115, high:118, low:110, close:111, volume:40 }
+  ];
+
+  assert.deepEqual(aggregateBars(bars, "weekly"), [
+    { date:"2026-01-09", open:100, high:115, low:95, close:114, volume:60 },
+    { date:"2026-01-12", open:115, high:118, low:110, close:111, volume:40 }
+  ]);
+});
+
+test("aggregateBars creates monthly OHLCV bars", () => {
+  const bars = [
+    { date:"2026-01-30", open:100, high:110, low:95, close:105, volume:10 },
+    { date:"2026-02-02", open:106, high:112, low:101, close:108, volume:20 },
+    { date:"2026-02-27", open:108, high:115, low:107, close:114, volume:30 }
+  ];
+
+  assert.deepEqual(aggregateBars(bars, "monthly"), [
+    { date:"2026-01-30", open:100, high:110, low:95, close:105, volume:10 },
+    { date:"2026-02-27", open:106, high:115, low:101, close:114, volume:50 }
+  ]);
 });
