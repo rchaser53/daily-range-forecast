@@ -11,6 +11,7 @@
 - SMA 5 / 25 / 75
 - Pivot High / Lowを利用した支持線・抵抗線の自動検出
 - 表示中のチャートをPNGスナップショットとしてクリップボードへコピー
+- 入力中URLの銘柄キャッシュを削除して最新データを再取得
 
 週次・月次は取得した日足OHLCVをサーバー側で集約して生成します。週足は月曜日始まり、月足は暦月単位です。
 
@@ -49,12 +50,20 @@ https://kabutan.jp/stock/kabuka?code=4689&ashi=day
 
 時間足のセレクトボックスから日次・週次・月次を切り替えられます。
 
+「キャッシュを削除して再取得」を押すと、入力中の株探URLから銘柄コードを特定し、その銘柄のキャッシュだけを削除してJ-Quantsから最新の日足データを再取得します。
+
 「スナップショットをコピー」を押すと、表示中のチャートがPNG画像としてクリップボードへコピーされます。ChatGPTなど画像貼り付けに対応したアプリへ、そのまま貼り付けできます。画像のクリップボード書き込みはブラウザのClipboard APIを利用するため、対応ブラウザかつ安全なコンテキスト（HTTPSまたはlocalhost）が必要です。
 
 APIを直接利用する場合は `timeframe` に `daily` / `weekly` / `monthly` を指定できます。
 
 ```text
 /api/chart?url=https%3A%2F%2Fkabutan.jp%2Fstock%2Fkabuka%3Fcode%3D4689&timeframe=weekly
+```
+
+対象URLのキャッシュだけを削除する場合は、`DELETE /api/cache` を利用できます。
+
+```text
+DELETE /api/cache?url=https%3A%2F%2Fkabutan.jp%2Fstock%2Fkabuka%3Fcode%3D4689
 ```
 
 ## Test
@@ -72,4 +81,4 @@ npm test
 
 J-QuantsのAPI呼び出し回数を抑えるため、取得済みの日足データは銘柄コードごとに `.cache/daily-bars/<code>.json` へ保存します。同じ銘柄は以後このファイルから読み込むため、サーバーを再起動しても再取得しません。
 
-最新データをJ-Quantsから取り直したい場合は、対象銘柄のキャッシュファイルを削除してください。`.cache/` はGit管理対象外です。
+最新データをJ-Quantsから取り直したい場合は、画面の「キャッシュを削除して再取得」を押してください。対象銘柄のキャッシュだけを削除して再取得します。`.cache/` はGit管理対象外です。
