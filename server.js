@@ -2,7 +2,7 @@ require("dotenv").config();
 
 const express = require("express");
 const path = require("path");
-const { extractStockCode, getDailyBars } = require("./lib/jquants");
+const { extractStockCode, getDailyBars, clearCache } = require("./lib/jquants");
 const { detectLevels, calculateSMA, aggregateBars } = require("./lib/analysis");
 
 const app = express();
@@ -37,6 +37,19 @@ app.get("/api/chart", async (req, res) => {
       },
       levels: detectLevels(bars)
     });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.delete("/api/cache", async (req, res) => {
+  try {
+    if (!req.query.url) return res.status(400).json({ error: "url parameter is required" });
+
+    const code = extractStockCode(req.query.url);
+    const deleted = await clearCache(code);
+    res.json({ code, deleted });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: error.message });

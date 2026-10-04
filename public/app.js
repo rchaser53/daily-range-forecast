@@ -3,6 +3,7 @@ let chart;
 
 document.getElementById("load").addEventListener("click", loadChart);
 document.getElementById("timeframe").addEventListener("change", loadChart);
+document.getElementById("clear-cache").addEventListener("click", clearCacheAndReload);
 document.getElementById("copy-snapshot").addEventListener("click", copySnapshot);
 
 const timeframeLabels = {
@@ -26,6 +27,32 @@ async function loadChart() {
     renderChart(data);
   } catch (error) {
     status.textContent = `エラー: ${error.message}`;
+  }
+}
+
+async function clearCacheAndReload() {
+  const status = document.getElementById("status");
+  const sourceUrl = document.getElementById("url").value;
+  const button = document.getElementById("clear-cache");
+
+  button.disabled = true;
+  status.textContent = "キャッシュを削除中...";
+
+  try {
+    const params = new URLSearchParams({ url: sourceUrl });
+    const response = await fetch(`/api/cache?${params}`, { method: "DELETE" });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || "キャッシュ削除に失敗しました");
+
+    status.textContent = data.deleted
+      ? `銘柄コード ${data.code} のキャッシュを削除しました。最新データを再取得します...`
+      : `銘柄コード ${data.code} のキャッシュはありません。最新データを取得します...`;
+
+    await loadChart();
+  } catch (error) {
+    status.textContent = `エラー: ${error.message}`;
+  } finally {
+    button.disabled = false;
   }
 }
 
