@@ -3,6 +3,7 @@ let chart;
 
 document.getElementById("load").addEventListener("click", loadChart);
 document.getElementById("timeframe").addEventListener("change", loadChart);
+document.getElementById("copy-snapshot").addEventListener("click", copySnapshot);
 
 const timeframeLabels = {
   daily: "日次",
@@ -25,6 +26,44 @@ async function loadChart() {
     renderChart(data);
   } catch (error) {
     status.textContent = `エラー: ${error.message}`;
+  }
+}
+
+async function copySnapshot() {
+  const status = document.getElementById("status");
+
+  if (!chart) {
+    status.textContent = "チャートを読み込んでからスナップショットをコピーしてください";
+    return;
+  }
+
+  if (!navigator.clipboard?.write || typeof ClipboardItem === "undefined") {
+    status.textContent = "このブラウザは画像のクリップボードコピーに対応していません";
+    return;
+  }
+
+  const button = document.getElementById("copy-snapshot");
+  button.disabled = true;
+  status.textContent = "スナップショットをコピー中...";
+
+  try {
+    const canvas = chart.takeScreenshot();
+    const blob = await new Promise((resolve, reject) => {
+      canvas.toBlob((value) => {
+        if (value) resolve(value);
+        else reject(new Error("PNG画像の生成に失敗しました"));
+      }, "image/png");
+    });
+
+    await navigator.clipboard.write([
+      new ClipboardItem({ "image/png": blob })
+    ]);
+
+    status.textContent = "チャート画像をクリップボードにコピーしました。ChatGPTへそのまま貼り付けできます";
+  } catch (error) {
+    status.textContent = `スナップショットのコピーに失敗しました: ${error.message}`;
+  } finally {
+    button.disabled = false;
   }
 }
 
