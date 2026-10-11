@@ -184,6 +184,7 @@ async function exportSnapshots() {
     container.style.cssText = "position:fixed;left:-10000px;top:0;width:1200px;height:700px";
     document.body.appendChild(container);
     const result = await BatchExport.collectSnapshots(codes, timeframe, async (code) => {
+      status.textContent = `銘柄コード: ${code} を取得中（API制限のため待機する場合があります）`;
       const url = `https://kabutan.jp/stock/kabuka?code=${code}`;
       const response = await fetch(`/api/chart?${new URLSearchParams({ url, timeframe })}`, {
         signal: AbortSignal.timeout(60000)
