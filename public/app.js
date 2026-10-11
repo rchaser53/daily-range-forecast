@@ -1,5 +1,6 @@
 const { createChart, CandlestickSeries, HistogramSeries, LineSeries, LineStyle } = LightweightCharts;
 let chart;
+let chartCode;
 
 document.getElementById("load").addEventListener("click", loadChart);
 document.getElementById("timeframe").addEventListener("change", loadChart);
@@ -74,7 +75,7 @@ async function copySnapshot() {
   status.textContent = "スナップショットをコピー中...";
 
   try {
-    const canvas = chart.takeScreenshot();
+    const canvas = createSnapshotCanvas(chart.takeScreenshot(), chartCode);
     const blob = await new Promise((resolve, reject) => {
       canvas.toBlob((value) => {
         if (value) resolve(value);
@@ -94,7 +95,27 @@ async function copySnapshot() {
   }
 }
 
+function createSnapshotCanvas(chartCanvas, code) {
+  const padding = 12;
+  const headerHeight = 40;
+  const canvas = document.createElement("canvas");
+  canvas.width = chartCanvas.width;
+  canvas.height = chartCanvas.height + headerHeight;
+
+  const context = canvas.getContext("2d");
+  if (!context) throw new Error("スナップショットの描画に失敗しました");
+  context.fillStyle = "#111";
+  context.fillRect(0, 0, canvas.width, canvas.height);
+  context.fillStyle = "#eee";
+  context.font = "bold 18px system-ui, sans-serif";
+  context.textBaseline = "middle";
+  context.fillText(`銘柄コード: ${code}`, padding, headerHeight / 2);
+  context.drawImage(chartCanvas, 0, headerHeight);
+  return canvas;
+}
+
 function renderChart(data) {
+  chartCode = undefined;
   const container = document.getElementById("chart");
   if (chart) chart.remove();
 
@@ -135,6 +156,7 @@ function renderChart(data) {
   }));
 
   chart.timeScale().fitContent();
+  chartCode = data.code;
 }
 
 loadChart();
