@@ -6,6 +6,7 @@ document.getElementById("load").addEventListener("click", loadChart);
 document.getElementById("timeframe").addEventListener("change", loadChart);
 document.getElementById("clear-cache").addEventListener("click", clearCacheAndReload);
 document.getElementById("copy-snapshot").addEventListener("click", copySnapshot);
+document.getElementById("batch-export").addEventListener("click", exportSnapshots);
 
 const timeframeLabels = {
   daily: "日次",
@@ -119,8 +120,13 @@ function renderChart(data) {
   const container = document.getElementById("chart");
   if (chart) chart.remove();
 
-  chart = createChart(container, {
-    autoSize: true,
+  chart = buildChart(container, data, { autoSize: true });
+  chartCode = data.code;
+}
+
+function buildChart(container, data, sizing) {
+  const chart = createChart(container, {
+    ...sizing,
     layout: { background: { color: "#111" }, textColor: "#ccc" },
     grid: { vertLines: { color: "#222" }, horzLines: { color: "#222" } }
   });
@@ -156,7 +162,71 @@ function renderChart(data) {
   }));
 
   chart.timeScale().fitContent();
-  chartCode = data.code;
+  return chart;
+}
+
+async function exportSnapshots() {
+  const button = document.getElementById("batch-export");
+  if (button.disabled) return;
+  const status = document.getElementById("batch-status");
+  const file = document.getElementById("batch-config").files[0];
+  const timeframe = document.getElementById("timeframe").value;
+  if (!file) {
+    status.textContent = "銘柄コードのJSON設定ファイルを選択してください";
+    return;
+  }
+  button.disabled = true;
+  let container;
+  try {
+    if (file.size > 1024 * 1024) throw new Error("設定ファイルは1MB以下にしてください");
+    const codes = BatchExport.parseConfig(await file.text());
+    container = document.createElement("div");
+    container.style.cssText = "position:fixed;left:-10000px;top:0;width:1200px;height:700px";
+    document.body.appendChild(container);
+    const result = await BatchExport.collectSnapshots(codes, timeframe, async (code) => {
+      const url = `https://kabutan.jp/stock/kabuka?code=${code}`;
+      const response = await fetch(`/api/chart?${new URLSearchParams({ url, timeframe })}`, {
+        signal: AbortSignal.timeout(60000)
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "データ取得に失敗しました");
+      let batchChart;
+      try {
+        batchChart = buildChart(container, data, { width: 1200, height: 700 });
+        // Allow the chart's scheduled canvas paint to finish before capturing it.
+        await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+        const canvas = createSnapshotCanvas(batchChart.takeScreenshot(), data.code);
+        const blob = await new Promise((resolve, reject) => canvas.toBlob(
+          (value) => value ? resolve(value) : reject(new Error("PNG画像の生成に失敗しました")), "image/png"
+        ));
+        return new Uint8Array(await blob.arrayBuffer());
+      } finally {
+        batchChart?.remove();
+      }
+    }, (done, total, code) => {
+      status.textContent = `${done} / ${total} 件処理済み（銘柄コード: ${code}）`;
+    });
+    if (!result.entries.length) throw new Error(`全銘柄の取得に失敗しました: ${result.errors.join(" / ")}`);
+    if (result.errors.length) result.entries.push({
+      name: "errors.txt", data: new TextEncoder().encode(result.errors.join("\n"))
+    });
+    const blob = new Blob([BatchExport.createZip(result.entries)], { type: "application/zip" });
+    const downloadUrl = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = downloadUrl;
+    link.download = `charts-${timeframe}-${new Date().toISOString().slice(0, 10)}.zip`;
+    document.body.appendChild(link);
+    try { link.click(); } finally {
+      link.remove();
+      setTimeout(() => URL.revokeObjectURL(downloadUrl), 60000);
+    }
+    status.textContent = `ZIPを保存しました。成功: ${codes.length - result.errors.length}件 / 失敗: ${result.errors.length}件`;
+  } catch (error) {
+    status.textContent = `一括保存に失敗しました: ${error.message}`;
+  } finally {
+    container?.remove();
+    button.disabled = false;
+  }
 }
 
 loadChart();

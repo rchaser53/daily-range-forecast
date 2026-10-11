@@ -28,8 +28,17 @@
     <button id="copy-snapshot" type="button">スナップショットをコピー</button>
   </div>
   <div id="status"></div>
+  <fieldset>
+    <legend>スナップショット一括保存</legend>
+    <label for="batch-config">銘柄コードのJSON設定ファイル</label>
+    <input id="batch-config" type="file" accept=".json,application/json">
+    <button id="batch-export" type="button">画像を生成してZIPをダウンロード</button>
+    <p>形式: {"codes":["4689","7203"]}（最大100銘柄）。選択中の時間足で保存します。</p>
+    <div id="batch-status" role="status" aria-live="polite"></div>
+  </fieldset>
   <div id="chart"></div>
   <script src="/vendor/lightweight-charts/lightweight-charts.standalone.production.js"></script>
+  <script src="/batch-export.js"></script>
   <script src="/app.js"></script>
 </body>
 </html>
